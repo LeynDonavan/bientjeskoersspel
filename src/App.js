@@ -386,7 +386,7 @@ const renderBoard = () => {
                   onClick={() => {
                     const oldPosition = player1Position;
                     const newPosition = oldPosition + 1;
-                    if (newPosition <= 63) {
+                    if (newPosition <= 60) {
                       setPlayer1Position(newPosition);
                       setMoveHistory(prev => [...prev, {
                         player: 1,
@@ -439,16 +439,16 @@ const renderBoard = () => {
                 <input 
                   type="number" 
                   min="0" 
-                  max="63"
+                  max="60"
                   className="w-20 px-2 py-1 border rounded"
                   id="redlightsJumpInput"
-                  placeholder="0-63"
+                  placeholder="0-60"
                 />
                 <button 
                   onClick={() => {
                     const input = document.getElementById('redlightsJumpInput');
                     const targetPosition = parseInt(input.value);
-                    if (!isNaN(targetPosition) && targetPosition >= 0 && targetPosition <= 63) {
+                    if (!isNaN(targetPosition) && targetPosition >= 0 && targetPosition <= 60) {
                       const oldPosition = player1Position;
                       setPlayer1Position(targetPosition);
                       setMoveHistory(prev => [...prev, {
@@ -503,7 +503,7 @@ const renderBoard = () => {
                   onClick={() => {
                     const oldPosition = player2Position;
                     const newPosition = oldPosition + 1;
-                    if (newPosition <= 63) {
+                    if (newPosition <= 60) {
                       setPlayer2Position(newPosition);
                       setMoveHistory(prev => [...prev, {
                         player: 2,
@@ -556,16 +556,16 @@ const renderBoard = () => {
                 <input 
                   type="number" 
                   min="0" 
-                  max="63"
+                  max="60"
                   className="w-20 px-2 py-1 border rounded"
                   id="blauwjobJumpInput"
-                  placeholder="0-63"
+                  placeholder="0-60"
                 />
                 <button 
                   onClick={() => {
                     const input = document.getElementById('blauwjobJumpInput');
                     const targetPosition = parseInt(input.value);
-                    if (!isNaN(targetPosition) && targetPosition >= 0 && targetPosition <= 63) {
+                    if (!isNaN(targetPosition) && targetPosition >= 0 && targetPosition <= 60) {
                       const oldPosition = player2Position;
                       setPlayer2Position(targetPosition);
                       setMoveHistory(prev => [...prev, {
