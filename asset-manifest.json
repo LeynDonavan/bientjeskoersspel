@@ -1,15 +1,16 @@
 {
   "files": {
-    "main.css": "/bientjeskoersspel/static/css/main.badb9a6f.css",
-    "main.js": "/bientjeskoersspel/static/js/main.3b679b8d.js",
+    "main.css": "/bientjeskoersspel/static/css/main.ccc00302.css",
+    "main.js": "/bientjeskoersspel/static/js/main.0c8f0432.js",
     "static/js/453.61bbe48a.chunk.js": "/bientjeskoersspel/static/js/453.61bbe48a.chunk.js",
+    "static/media/Lonely.mp3": "/bientjeskoersspel/static/media/Lonely.abedeb3affad9fa3d032.mp3",
     "index.html": "/bientjeskoersspel/index.html",
-    "main.badb9a6f.css.map": "/bientjeskoersspel/static/css/main.badb9a6f.css.map",
-    "main.3b679b8d.js.map": "/bientjeskoersspel/static/js/main.3b679b8d.js.map",
+    "main.ccc00302.css.map": "/bientjeskoersspel/static/css/main.ccc00302.css.map",
+    "main.0c8f0432.js.map": "/bientjeskoersspel/static/js/main.0c8f0432.js.map",
     "453.61bbe48a.chunk.js.map": "/bientjeskoersspel/static/js/453.61bbe48a.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.badb9a6f.css",
-    "static/js/main.3b679b8d.js"
+    "static/css/main.ccc00302.css",
+    "static/js/main.0c8f0432.js"
   ]
 }
