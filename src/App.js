@@ -7,6 +7,9 @@ function App() {
 const [currentPlayer, setCurrentPlayer] = useState(1);
 const [player1Position, setPlayer1Position] = useState(0);
 const [player2Position, setPlayer2Position] = useState(0);
+const [player1DemarrageUsed, setPlayer1DemarrageUsed] = useState(false);
+const [player2DemarrageUsed, setPlayer2DemarrageUsed] = useState(false);
+const [isDemarrageActive, setIsDemarrageActive] = useState(false);
 const [diceValue, setDiceValue] = useState(null);
 const [gameMessage, setGameMessage] = useState('');
 const [moveValue, setMoveValue] = useState('');
@@ -47,7 +50,7 @@ const specialTiles = {
   13: { message: 'Bidon collée - rij 3 extra kilometers', effect: 'forward3', color: 'bg-green-200' },
   36: { message: 'Bidon collée - rij 3 extra kilometers', effect: 'forward3', color: 'bg-green-200' },
   
-  // Demarrage (donkergroen)
+  // Windstoot (donkergroen)
   26: { message: 'Windstoot - gooi nog eens', effect: 'extraTurn', color: 'bg-green-600' },
   45: { message: 'Windstoot - gooi nog eens', effect: 'extraTurn', color: 'bg-green-600' },
 
@@ -94,73 +97,132 @@ const movePlayer = (e) => {
 
   const value = parseInt(moveValue);
 
-  if (isNaN(value) || value < 0 || value > 6) {
-    setGameMessage('Kilometers gereden?');
+  // Validatie voor demarrage
+  if (isNaN(value) || 
+      (isDemarrageActive && (value < 3 || value > 18)) || 
+      (!isDemarrageActive && (value < 1 || value > 6))) {
+    setGameMessage(isDemarrageActive 
+      ? 'Demarrage moet tussen 3 en 18 zijn!' 
+      : 'Kilometers gereden moet tussen 1 en 6 zijn!');
     return;
   }
 
   setDiceValue(value);
 
   const currentPosition = currentPlayer === 1 ? player1Position : player2Position;
-  let newPosition = currentPosition + value;
+  const element = document.getElementById(`player${currentPlayer}`);
 
-  if (specialTiles[newPosition]) {
-    const tile = specialTiles[newPosition];
-    setGameMessage(tile.message);
+  // Stap voor stap beweging
+  let step = 0;
+  let finalPosition = currentPosition + value;
+  let skipTurnChange = false;
 
-  if (tile.sound) {
-    audio.play();
-  }
+  const moveInterval = setInterval(() => {
+    if (step < value) {
+      step++;
+      let newPosition = currentPosition + step;
 
-    switch(tile.effect) {
-      case 'back3':
-        newPosition -= 3;
-        break;
-      case 'back10':
-        newPosition -= 10;
-        break;
-      case 'skipTurn':
-        break;
-      case 'goto25':
-        newPosition = 25;
-        break;
-      case 'forward3':
-        newPosition += 3;
-        break;
-      case 'extraTurn':
-        break;
+      // Animeer elke stap
+      if (element) {
+        element.style.transition = 'all 0.3s ease';
+        element.style.transform = `translateX(${newPosition * 60}px)`;
+      }
+
+      // Update positie in state
+      if (currentPlayer === 1) {
+        setPlayer1Position(newPosition);
+      } else {
+        setPlayer2Position(newPosition);
+      }
+
+      // Bij laatste stap, verwerk speciale vakjes en effecten
+      if (step === value) {
+        if (specialTiles[newPosition]) {
+          const tile = specialTiles[newPosition];
+          setGameMessage(tile.message);
+
+          if (tile.sound) {
+            audio.play();
+          }
+
+          // Verwerk special tile effecten
+          switch(tile.effect) {
+            case 'back3':
+              finalPosition = newPosition - 3;
+              break;
+            case 'back10':
+              finalPosition = newPosition - 10;
+              break;
+            case 'skipTurn':
+              break;
+            case 'goto25':
+              finalPosition = 25;
+              break;
+            case 'forward3':
+              finalPosition = newPosition + 3;
+              break;
+            case 'extraTurn':
+              skipTurnChange = true;
+              break;
+          }
+
+          // Animeer extra beweging door special effect
+          if (finalPosition !== newPosition) {
+            setTimeout(() => {
+              if (element) {
+                element.style.transition = 'all 0.5s ease';
+                element.style.transform = `translateX(${finalPosition * 60}px)`;
+              }
+              if (currentPlayer === 1) {
+                setPlayer1Position(finalPosition);
+              } else {
+                setPlayer2Position(finalPosition);
+              }
+            }, 500);
+          }
+        } else {
+          setGameMessage('');
+          finalPosition = newPosition;
+        }
+
+        // Check voor winnaar
+        if (checkWinner(finalPosition)) {
+          setGameMessage(`${PLAYER_NAMES[currentPlayer]} heeft gewonnen!`);
+          clearInterval(moveInterval);
+          return;
+        }
+
+        // Voeg de zet toe aan de geschiedenis
+        setMoveHistory(prev => [...prev, {
+          player: currentPlayer,
+          from: currentPosition,
+          to: finalPosition,
+          diceValue: value,
+          effect: specialTiles[newPosition]?.message || null
+        }]);
+
+        // Verwerk demarrage status
+        if (isDemarrageActive) {
+          setIsDemarrageActive(false);
+          if (currentPlayer === 1) {
+            setPlayer1DemarrageUsed(true);
+          } else {
+            setPlayer2DemarrageUsed(true);
+          }
+        }
+
+        // Wissel de beurt (tenzij er een extraTurn effect actief is)
+        if (!skipTurnChange) {
+          setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
+        }
+
+        // Reset het invoerveld
+        setMoveValue('');
+      }
+    } else {
+      clearInterval(moveInterval);
     }
-  } else {
-    setGameMessage('');
-  }
-
-  newPosition = Math.max(0, newPosition);
-
-  if (checkWinner(newPosition)) {
-    setGameMessage(`${PLAYER_NAMES[currentPlayer]} heeft gewonnen!`);
-    return;
-  }
-
-  //Voeg de zet toe aan de geschiedenis 
-  setMoveHistory(prev => [...prev, {
-    player: currentPlayer,
-    from: currentPosition,
-    to: newPosition,
-    diceValue: value,
-    effect: specialTiles[newPosition]?.message || null
-    }]);
-
-  // Animeer de beweging
-  animateMovement(currentPosition, newPosition); 
-
-  if (currentPlayer === 1) {
-    setPlayer1Position(newPosition);
-  } else {
-    setPlayer2Position(newPosition);
-  }
-
-  // Reset het invoerveld
-  setMoveValue('');
+  }, 1000); // Interval tussen elke stap (300ms)
 };
 
 // Winner functie
@@ -207,6 +269,9 @@ const resetGame = () => {
   setGameMessage('');
   setMoveValue('');
   setWinner(null);
+    setPlayer1DemarrageUsed(false);
+  setPlayer2DemarrageUsed(false);
+  setIsDemarrageActive(false);
 };
 
 const renderBoard = () => {
@@ -285,123 +350,302 @@ const renderBoard = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-8">
       <h1 className="text-3xl font-bold mb-6 text-center">Bientjes Koersspel</h1>
   
-      {/* Moderator Controls */}
-      <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
-      <h2 className="font-bold text-lg mb-2">Moderator Controls</h2>
-      <div className="flex gap-4 flex-wrap">
-        <button 
-          onClick={() => setCurrentPlayer(1)}
-          className={`px-4 py-2 rounded-md text-white transition-colors
-                 ${currentPlayer === 1 
-                   ? 'bg-red-600 font-bold' 
-                   : 'bg-red-400 hover:bg-red-500'}`}
-                >   
-          Beurt aan Redlights
-        </button>
-
-        <button 
-          onClick={() => setCurrentPlayer(2)}
-          className={`px-4 py-2 rounded-md text-white transition-colors
-                 ${currentPlayer === 2 
-                   ? 'bg-blue-600 font-bold' 
-                   : 'bg-blue-400 hover:bg-blue-500'}`}
-                >
-          Beurt aan Blauwjob
-        </button>
-
-        <button 
-          onClick={() => setShowHistory(!showHistory)}
-          className={`px-4 py-2 rounded-md text-white transition-colors
-                 ${showHistory 
-                   ? 'bg-purple-600 font-bold' 
-                   : 'bg-purple-400 hover:bg-purple-500'}`}
-                >
-          {showHistory ? 'Verberg Geschiedenis' : 'Toon Geschiedenis'}
-        </button>
-    
-        <button 
-          onClick={resetGame}
-          className="px-4 py-2 rounded-md text-white transition-colors
-                bg-gray-500 hover:bg-gray-600"
-                >
-      Neutralisatie
-        </button>
-      </div>
-
-  {/* Geschiedenis sectie - alleen tonen als showHistory true is */}
-  {showHistory && (
-    <div className="mt-4 bg-white p-4 rounded-lg">
-      <h3 className="font-bold mb-2">Geschiedenis</h3>
-      <div className="max-h-40 overflow-y-auto">
-        {moveHistory.map((move, index) => (
-          <div key={index} className="text-sm mb-1">
-            {PLAYER_NAMES[move.player]}: {move.from} → {move.to} 
-            {move.effect && ` (${move.effect})`}
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-</div>
+      <div className="flex gap-8">
+        {/* Linker kolom - Moderator Controls */}
+        <div className="w-1/4">
+          <div className="bg-gray-100 p-4 rounded-lg shadow">
+            <h2 className="font-bold text-lg mb-4">Moderator Controls</h2>
   
-      <div className="bg-white p-6 rounded-lg shadow">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className={`font-bold text-xl ${currentPlayer === 1 ? 'text-red-500' : 'text-blue-500'} 
-                          transition-colors duration-300 transform scale-105`}>
-              Het is nu aan: {PLAYER_NAMES[currentPlayer]}
-            </p>
-            <form onSubmit={movePlayer} className="flex items-center space-x-2">
-              <input
-                type="number"
-                min="0"
-                max="6"
-                value={moveValue}
-                onChange={(e) => setMoveValue(e.target.value)}
-                className={`w-16 px-2 py-1 border-2 rounded-md focus:outline-none focus:ring-2
-                           ${currentPlayer === 1 ? 'border-red-300 focus:ring-red-500' : 'border-blue-300 focus:ring-blue-500'}`}
-                placeholder="0-6"
-              />
+            {/* Redlights Controls */}
+            <div className="flex flex-col gap-2 mb-4">
               <button 
-                type="submit"
-                className={`px-4 py-1 rounded-md text-white transition-colors
-                           ${currentPlayer === 1 
-                             ? 'bg-red-500 hover:bg-red-600' 
-                             : 'bg-blue-500 hover:bg-blue-600'}`}
-              >
-                Zet
+                onClick={() => setCurrentPlayer(1)}
+                className={`px-4 py-2 rounded-md text-white transition-colors
+                  ${currentPlayer === 1 ? 'bg-red-600 font-bold' : 'bg-red-400 hover:bg-red-500'}`}
+              >   
+                Beurt aan Redlights
               </button>
-            </form>
-          </div>
+              <button 
+                onClick={() => {
+                  if (!player1DemarrageUsed) {
+                    setIsDemarrageActive(true);
+                    setCurrentPlayer(1);
+                  }
+                }}
+                disabled={player1DemarrageUsed}
+                className={`px-4 py-2 rounded-md text-white transition-colors 
+                  ${player1DemarrageUsed ? 'bg-gray-400' : 'bg-pink-500 hover:bg-pink-600'}`}
+              >
+                Demarrage Redlights
+              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    const oldPosition = player1Position;
+                    const newPosition = oldPosition + 1;
+                    if (newPosition <= 63) {
+                      setPlayer1Position(newPosition);
+                      setMoveHistory(prev => [...prev, {
+                        player: 1,
+                        from: oldPosition,
+                        to: newPosition,
+                        diceValue: 1,
+                        effect: "Moderator: +1 stap"
+                      }]);
+                      const element = document.getElementById('player1');
+                      if (element) {
+                        element.style.transition = 'all 0.5s ease';
+                        element.style.transform = `translateX(${newPosition * 60}px)`;
+                      }
+                      if (specialTiles[newPosition]) {
+                        setGameMessage(`Redlights komt op ${specialTiles[newPosition].message}`);
+                      }
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-md text-white bg-pink-500 hover:bg-pink-600"
+                >
+                  Redlights +1
+                </button>
+                <button 
+                  onClick={() => {
+                    const oldPosition = player1Position;
+                    const newPosition = Math.max(0, oldPosition - 1);
+                    setPlayer1Position(newPosition);
+                    setMoveHistory(prev => [...prev, {
+                      player: 1,
+                      from: oldPosition,
+                      to: newPosition,
+                      diceValue: -1,
+                      effect: "Moderator: -1 stap"
+                    }]);
+                    const element = document.getElementById('player1');
+                    if (element) {
+                      element.style.transition = 'all 0.5s ease';
+                      element.style.transform = `translateX(${newPosition * 60}px)`;
+                    }
+                    if (specialTiles[newPosition]) {
+                      setGameMessage(`Redlights komt op ${specialTiles[newPosition].message}`);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-md text-white bg-pink-500 hover:bg-pink-600"
+                >
+                  Redlights -1
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="63"
+                  className="w-20 px-2 py-1 border rounded"
+                  id="redlightsJumpInput"
+                  placeholder="0-63"
+                />
+                <button 
+                  onClick={() => {
+                    const input = document.getElementById('redlightsJumpInput');
+                    const targetPosition = parseInt(input.value);
+                    if (!isNaN(targetPosition) && targetPosition >= 0 && targetPosition <= 63) {
+                      const oldPosition = player1Position;
+                      setPlayer1Position(targetPosition);
+                      setMoveHistory(prev => [...prev, {
+                        player: 1,
+                        from: oldPosition,
+                        to: targetPosition,
+                        diceValue: 'Jump',
+                        effect: "Moderator: Directe sprong"
+                      }]);
+                      const element = document.getElementById('player1');
+                      if (element) {
+                        element.style.transition = 'all 0.5s ease';
+                        element.style.transform = `translateX(${targetPosition * 60}px)`;
+                      }
+                      if (specialTiles[targetPosition]) {
+                        setGameMessage(`Redlights komt op ${specialTiles[targetPosition].message}`);
+                      }
+                      input.value = '';
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-md text-white bg-pink-500 hover:bg-pink-600"
+                >
+                  Plaats Redlights
+                </button>
+              </div>
+            </div>
   
-          <div className="flex justify-between items-center">
-            <p className={`flex items-center text-lg ${currentPlayer === 1 ? 'font-bold scale-105' : ''} 
-                          transition-all duration-300`}>
-              <span className="w-3 h-3 bg-red-500 rounded-full inline-block mr-2"></span>
-              Redlights.be: {player1Position}
-            </p>
-            <p className={`flex items-center text-lg ${currentPlayer === 2 ? 'font-bold scale-105' : ''} 
-                          transition-all duration-300`}>
-              <span className="w-3 h-3 bg-blue-500 rounded-full inline-block mr-2"></span>
-              Blauwjob Bientje: {player2Position}
-            </p>
+            {/* Blauwjob Controls */}
+            <div className="flex flex-col gap-2 mb-4">
+              <button 
+                onClick={() => setCurrentPlayer(2)}
+                className={`px-4 py-2 rounded-md text-white transition-colors
+                  ${currentPlayer === 2 ? 'bg-blue-600 font-bold' : 'bg-blue-600 hover:bg-blue-700'}`}
+              >
+                Beurt aan Blauwjob
+              </button>
+              <button 
+                onClick={() => {
+                  if (!player2DemarrageUsed) {
+                    setIsDemarrageActive(true);
+                    setCurrentPlayer(2);
+                  }
+                }}
+                disabled={player2DemarrageUsed}
+                className={`px-4 py-2 rounded-md text-white transition-colors 
+                  ${player2DemarrageUsed ? 'bg-gray-400' : 'bg-blue-400 hover:bg-blue-500'}`}
+              >
+                Demarrage Blauwjob
+              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    const oldPosition = player2Position;
+                    const newPosition = oldPosition + 1;
+                    if (newPosition <= 63) {
+                      setPlayer2Position(newPosition);
+                      setMoveHistory(prev => [...prev, {
+                        player: 2,
+                        from: oldPosition,
+                        to: newPosition,
+                        diceValue: 1,
+                        effect: "Moderator: +1 stap"
+                      }]);
+                      const element = document.getElementById('player2');
+                      if (element) {
+                        element.style.transition = 'all 0.5s ease';
+                        element.style.transform = `translateX(${newPosition * 60}px)`;
+                      }
+                      if (specialTiles[newPosition]) {
+                        setGameMessage(`Blauwjob komt op ${specialTiles[newPosition].message}`);
+                      }
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-md text-white bg-blue-400 hover:bg-blue-500"
+                >
+                  Blauwjob +1
+                </button>
+                <button 
+                  onClick={() => {
+                    const oldPosition = player2Position;
+                    const newPosition = Math.max(0, oldPosition - 1);
+                    setPlayer2Position(newPosition);
+                    setMoveHistory(prev => [...prev, {
+                      player: 2,
+                      from: oldPosition,
+                      to: newPosition,
+                      diceValue: -1,
+                      effect: "Moderator: -1 stap"
+                    }]);
+                    const element = document.getElementById('player2');
+                    if (element) {
+                      element.style.transition = 'all 0.5s ease';
+                      element.style.transform = `translateX(${newPosition * 60}px)`;
+                    }
+                    if (specialTiles[newPosition]) {
+                      setGameMessage(`Blauwjob komt op ${specialTiles[newPosition].message}`);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-md text-white bg-blue-400 hover:bg-blue-500"
+                >
+                  Blauwjob -1
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="63"
+                  className="w-20 px-2 py-1 border rounded"
+                  id="blauwjobJumpInput"
+                  placeholder="0-63"
+                />
+                <button 
+                  onClick={() => {
+                    const input = document.getElementById('blauwjobJumpInput');
+                    const targetPosition = parseInt(input.value);
+                    if (!isNaN(targetPosition) && targetPosition >= 0 && targetPosition <= 63) {
+                      const oldPosition = player2Position;
+                      setPlayer2Position(targetPosition);
+                      setMoveHistory(prev => [...prev, {
+                        player: 2,
+                        from: oldPosition,
+                        to: targetPosition,
+                        diceValue: 'Jump',
+                        effect: "Moderator: Directe sprong"
+                      }]);
+                      const element = document.getElementById('player2');
+                      if (element) {
+                        element.style.transition = 'all 0.5s ease';
+                        element.style.transform = `translateX(${targetPosition * 60}px)`;
+                      }
+                      if (specialTiles[targetPosition]) {
+                        setGameMessage(`Blauwjob komt op ${specialTiles[targetPosition].message}`);
+                      }
+                      input.value = '';
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 rounded-md text-white bg-blue-400 hover:bg-blue-500"
+                >
+                  Plaats Blauwjob
+                </button>
+              </div>
+            </div>
+  
+            {/* Algemene Controls */}
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={() => setShowHistory(!showHistory)}
+                className="px-4 py-2 rounded-md text-white bg-gray-500 hover:bg-gray-600"
+              >
+                Toon Geschiedenis
+              </button>
+              <button 
+                onClick={resetGame}
+                className="px-4 py-2 rounded-md text-white bg-gray-500 hover:bg-gray-600"
+              >
+                Neutralisatie
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-     
-      {gameMessage && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 my-6">
-          <p className="text-yellow-700">{gameMessage}</p>
-        </div>
-      )}
-
-      
   
-      <div className="bg-white p-6 rounded-lg shadow-lg mt-6">
-        {renderBoard()}
+        {/* Rechter kolom - Spelbord en Status */}
+        <div className="flex-1">
+          <div className="bg-white p-6 rounded-lg shadow mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="font-bold text-xl">Het is nu aan: {PLAYER_NAMES[currentPlayer]}</p>
+              <form onSubmit={movePlayer} className="flex items-center gap-2">
+                <input 
+                  type="number"
+                  min={isDemarrageActive ? "3" : "1"}
+                  max={isDemarrageActive ? "18" : "6"}
+                  value={moveValue}
+                  onChange={(e) => setMoveValue(e.target.value)}
+                  className="w-16 px-2 py-1 border rounded"
+                  placeholder={isDemarrageActive ? "3-18" : "1-6"}
+                />
+                <button 
+                  type="submit"
+                  className="px-4 py-2 rounded-md text-white bg-green-500 hover:bg-green-600"
+                >
+                  Kilometers
+                </button>
+              </form>
+            </div>
+  
+            {gameMessage && (
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4">
+                <p className="text-yellow-700">{gameMessage}</p>
+              </div>
+            )}
+  
+            <div className="bg-white rounded-lg">
+              {renderBoard()}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
