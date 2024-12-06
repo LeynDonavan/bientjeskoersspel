@@ -1,24 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import SoundLonely from './Lonely.mp3';
-
+import SoundChasse from './Chasse.mp3';
+import SoundBidon from './Bidon.mp3';
+import SoundOpdracht from './Opdracht.mp3';
+import SoundPlat from './Plat.mp3';
+import SoundValpartij from './Valpartij.mp3';
+import SoundWindstoot from './Windstoot.mp3';
+import SoundWinnaar from './Winnaar.mp3';
+import SoundDemarrage from './Demarrage.mp3';
 
 function App() {
-// State declarations
-const [currentPlayer, setCurrentPlayer] = useState(1);
-const [player1Position, setPlayer1Position] = useState(0);
-const [player2Position, setPlayer2Position] = useState(0);
-const [player1DemarrageUsed, setPlayer1DemarrageUsed] = useState(false);
-const [player2DemarrageUsed, setPlayer2DemarrageUsed] = useState(false);
-const [isDemarrageActive, setIsDemarrageActive] = useState(false);
-const [diceValue, setDiceValue] = useState(null);
-const [gameMessage, setGameMessage] = useState('');
-const [moveValue, setMoveValue] = useState('');
-const [winner, setWinner] = useState(null);
-const [isMoving, setIsMoving] = useState(false);
-const [currentPath, setCurrentPath] = useState([]);
-const [moveHistory, setMoveHistory] = useState([]);
-const [audio] = useState(new Audio(SoundLonely));
-const [showHistory, setShowHistory] = useState(false);
+  // Audio states in één object
+  const [audioFiles] = useState({
+    lonely: new Audio(SoundLonely),
+    chasse: new Audio(SoundChasse),
+    bidon: new Audio(SoundBidon),
+    opdracht: new Audio(SoundOpdracht),
+    plat: new Audio(SoundPlat),
+    valpartij: new Audio(SoundValpartij),
+    windstoot: new Audio(SoundWindstoot),
+    winnaar: new Audio(SoundWinnaar),
+    demarrage: new Audio(SoundDemarrage)
+  });
+
+  // Functie om geluid af te spelen
+  const playSound = (soundKey) => {
+    audioFiles[soundKey].currentTime = 0; // Reset audio
+    audioFiles[soundKey].play();
+  };
+
+  // Overige state declarations
+  const [currentPlayer, setCurrentPlayer] = useState(1);
+  const [player1Position, setPlayer1Position] = useState(0);
+  const [player2Position, setPlayer2Position] = useState(0);
+  const [player1DemarrageUsed, setPlayer1DemarrageUsed] = useState(false);
+  const [player2DemarrageUsed, setPlayer2DemarrageUsed] = useState(false);
+  const [isDemarrageActive, setIsDemarrageActive] = useState(false);
+  const [diceValue, setDiceValue] = useState(null);
+  const [gameMessage, setGameMessage] = useState('');
+  const [moveValue, setMoveValue] = useState('');
+  const [winner, setWinner] = useState(null);
+  const [isMoving, setIsMoving] = useState(false);
+  const [currentPath, setCurrentPath] = useState([]);
+  const [moveHistory, setMoveHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
 
 // Spelersnamen
@@ -30,65 +55,79 @@ const PLAYER_NAMES = {
 // Speciale vakjes
 const specialTiles = {
   // Chasse patatte (lichtrood)
-  10: { message: 'Chasse patatte - keer 3 kilometer terug', effect: 'back3', color: 'bg-red-100' },
-  43: { message: 'Chasse patatte - keer 3 kilometer terug', effect: 'back3', color: 'bg-red-100' },
-  52: { message: 'Chasse patatte - keer 3 kilometer terug', effect: 'back3', color: 'bg-red-100' },
+  10: { message: 'Chasse patatte - keer 3 kilometer terug', effect: 'back3', color: 'bg-red-100', sound: 'chasse' },
+  44: { message: 'Chasse patatte - keer 3 kilometer terug', effect: 'back3', color: 'bg-red-100', sound: 'chasse' },
+  53: { message: 'Chasse patatte - keer 3 kilometer terug', effect: 'back3', color: 'bg-red-100', sound: 'chasse' },
   
   // Valpartij (zeer donkerrood)
-  32: { message: 'Valpartij - keer 10 kilometer terug', effect: 'back10', color: 'bg-red-800' },
-  56: { message: 'Valpartij - keer 10 kilometer terug', effect: 'back10', color: 'bg-red-800' },
+  33: { message: 'Valpartij - keer 10 kilometer terug', effect: 'back10', color: 'bg-red-800', sound: 'valpartij' },
+  55: { message: 'Valpartij - keer 10 kilometer terug', effect: 'back10', color: 'bg-red-800', sound: 'valpartij' },
   
   // Platte band (middenrood)
-  6: { message: 'Platte band - sla een beurt over', effect: 'skipTurn', color: 'bg-red-400' },
-  24: { message: 'Platte band - sla een beurt over', effect: 'skipTurn', color: 'bg-red-400' },
+  6: { message: 'Platte band - sla een beurt over', effect: 'skipTurn', color: 'bg-red-400', sound: 'plat' },
+  24: { message: 'Platte band - sla een beurt over', effect: 'skipTurn', color: 'bg-red-400', sound: 'plat' },
   
   // Lonely without you (donkerrood)
-  29: { message: 'Lonely without you - Frank wacht op je bij kilometer 25', effect: 'goto25', color: 'bg-red-600', sound: SoundLonely },
-  47: { message: 'Lonely without you - Frank wacht op je bij kilometer 25', effect: 'goto25', color: 'bg-red-600', sound: SoundLonely },
+  29: { message: 'Lonely without you - Frank wacht op je bij kilometer 25', effect: 'goto25', color: 'bg-red-600', sound: 'lonely' },
+  47: { message: 'Lonely without you - Frank wacht op je bij kilometer 25', effect: 'goto25', color: 'bg-red-600', sound: 'lonely' },
   
   // Bidon collée (lichtgroen)
-  13: { message: 'Bidon collée - rij 3 extra kilometers', effect: 'forward3', color: 'bg-green-200' },
-  36: { message: 'Bidon collée - rij 3 extra kilometers', effect: 'forward3', color: 'bg-green-200' },
+  13: { message: 'Bidon collée - rij 3 extra kilometers', effect: 'forward3', color: 'bg-green-200', sound: 'bidon' },
+  36: { message: 'Bidon collée - rij 3 extra kilometers', effect: 'forward3', color: 'bg-green-200', sound: 'bidon' },
   
   // Windstoot (donkergroen)
-  26: { message: 'Windstoot - gooi nog eens', effect: 'extraTurn', color: 'bg-green-600' },
-  45: { message: 'Windstoot - gooi nog eens', effect: 'extraTurn', color: 'bg-green-600' },
+  26: { message: 'Windstoot - gooi nog eens', effect: 'extraTurn', color: 'bg-green-600', sound: 'windstoot' },
+  45: { message: 'Windstoot - gooi nog eens', effect: 'extraTurn', color: 'bg-green-600', sound: 'windstoot' },
 
   // Opdrachten (paars)
-  7: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400' },
-  16: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400' },
-  22: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400' },
-  40: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400' },
-  46: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400' },
-  49: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400' },
-  59: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400' }
+  8: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' },
+  17: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' },
+  22: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' },
+  40: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' },
+  46: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' },
+  49: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' },
+  57: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' },
+  59: { message: 'Opdracht!', effect: 'challenge', color: 'bg-purple-400', sound: 'opdracht' }
   };
   
 // Layout van het bord
 const boardLayout = [
-  // Buitenste ring (1-20) - nog verder uitgerekt
-  { x: 5.5, y: 0.4 },  { x: 7.0, y: 0.4 },  { x: 8.5, y: 0.6 },  { x: 9.8, y: 1.0 },
-  { x: 11.0, y: 1.7 }, { x: 11.8, y: 2.8 }, { x: 12.2, y: 4 },   { x: 11.8, y: 5.2 },
-  { x: 11.0, y: 6.3 }, { x: 9.8, y: 7.0 },  { x: 8.5, y: 7.4 },  { x: 7.0, y: 7.6 },
-  { x: 5.5, y: 7.6 },  { x: 4.0, y: 7.4 },  { x: 2.7, y: 7.0 },  { x: 1.8, y: 6.3 },
-  { x: 1.2, y: 5.2 },  { x: 0.8, y: 4.0 },  { x: 1.2, y: 2.8 },  { x: 1.8, y: 1.7 },
+  // Buitenste ring (1-20)
+  { x: 6.0, y: 0.4 },  { x: 8.0, y: 0.4 },  { x: 10.0, y: 0.6 }, { x: 11.8, y: 1.0 },
+  { x: 13.2, y: 1.7 }, { x: 14.2, y: 2.8 }, { x: 14.6, y: 4.0 }, { x: 14.2, y: 5.2 },
+  { x: 13.2, y: 6.3 }, { x: 11.8, y: 7.0 }, { x: 10.0, y: 7.4 }, { x: 8.0, y: 7.6 },
+  { x: 6.0, y: 7.6 },  { x: 4.0, y: 7.4 },  { x: 2.2, y: 7.0 },  { x: 1.0, y: 6.3 },
+  { x: 0.4, y: 5.2 },  { x: 0.2, y: 4.0 },  { x: 0.4, y: 2.8 },  { x: 1.0, y: 1.7 },
 
-  // Tweede ring (21-40) - proportioneel mee vergroot
-  { x: 2.7, y: 1.0 },  { x: 4.0, y: 0.6 },  { x: 5.5, y: 1.4 },  { x: 7.0, y: 1.4 },
-  { x: 8.4, y: 1.6 },  { x: 9.6, y: 2.2 },  { x: 10.4, y: 3.2 }, { x: 10.4, y: 4.8 },
-  { x: 9.6, y: 5.8 },  { x: 8.4, y: 6.4 },  { x: 7.0, y: 6.6 },  { x: 5.5, y: 6.6 },
-  { x: 4.0, y: 6.4 },  { x: 2.8, y: 5.8 },  { x: 2.2, y: 4.8 },  { x: 2.2, y: 3.2 },
-  { x: 2.8, y: 2.2 },  { x: 4.0, y: 1.6 },  { x: 5.5, y: 2.4 },  { x: 7.0, y: 2.4 },
+  // Tweede ring (21-40)
+  { x: 2.2, y: 1.0 },  { x: 4.0, y: 0.6 },  { x: 6.0, y: 1.4 },  { x: 8.0, y: 1.4 },
+  { x: 10.0, y: 1.6 }, { x: 11.5, y: 2.2 }, { x: 12.4, y: 3.2 }, { x: 12.4, y: 4.8 },
+  { x: 11.5, y: 5.8 }, { x: 10.0, y: 6.4 }, { x: 8.0, y: 6.6 },  { x: 6.0, y: 6.6 },
+  { x: 4.0, y: 6.4 },  { x: 2.4, y: 5.8 },  { x: 1.6, y: 4.8 },  { x: 1.6, y: 3.2 },
+  { x: 2.4, y: 2.2 },  { x: 4.0, y: 1.6 },  { x: 6.0, y: 2.4 },  { x: 8.0, y: 2.4 },
 
-  // Derde ring (41-50) - aangepast aan nieuwe schaal
-  { x: 8.2, y: 2.7 },  { x: 9.0, y: 3.2 },  { x: 9.0, y: 4.8 },  { x: 8.2, y: 5.3 },
-  { x: 7.0, y: 5.6 },  { x: 5.5, y: 5.6 },  { x: 4.0, y: 5.3 },  { x: 3.2, y: 4.8 },
-  { x: 3.2, y: 3.2 },  { x: 4.0, y: 2.7 },
+  // Derde ring (41-47)
+  { x: 9.8, y: 2.7 },  { x: 10.8, y: 3.2 }, { x: 10.8, y: 4.8 }, { x: 9.8, y: 5.3 },
+  { x: 8.0, y: 5.6 },  { x: 6.0, y: 5.6 },  { x: 3.6, y: 5.3 },  
 
-  // Binnenste ring (51-60) - proportioneel aangepast
-  { x: 5.5, y: 3.0 },  { x: 6.6, y: 3.0 },  { x: 7.4, y: 3.2 },  { x: 7.8, y: 3.7 },
-  { x: 7.6, y: 4.3 },  { x: 7.0, y: 4.7 },  { x: 5.5, y: 4.8 },  { x: 4.0, y: 4.7 },
-  { x: 3.4, y: 4.3 },  { x: 3.6, y: 3.7 }
+  // Aangepaste posities (48-50)
+  { x: 3.2, y: 4.3 },  // 48
+  { x: 3.2, y: 3.2 },  // 49
+  { x: 4.2, y: 2.7 },  // 50
+
+  // Centrale vakjes (51-56)
+  { x: 6.0, y: 3.3 },  // 51
+  { x: 7.6, y: 3.5 },  // 52
+  { x: 8.8, y: 3.6 },  // 53
+  { x: 9.6, y: 4.2 },  // 54
+  { x: 9.2, y: 4.8 },  // 55
+  { x: 8.0, y: 4.6 },  // 56
+
+  // Centrale problematische vakjes (57-60)
+  { x: 6.6, y: 4.6 },  // 57
+  { x: 5.8, y: 4.6 },  // 58
+  { x: 4.8, y: 4.6 },  // 59
+  { x: 3.8, y: 3.6 }   // 60
 ];
   
 // MovePlayer functie
@@ -141,8 +180,9 @@ const movePlayer = (e) => {
           const tile = specialTiles[newPosition];
           setGameMessage(tile.message);
 
+          // Speel het juiste geluidseffect af
           if (tile.sound) {
-            audio.play();
+            playSound(tile.sound);
           }
 
           // Verwerk special tile effecten
@@ -188,6 +228,7 @@ const movePlayer = (e) => {
         // Check voor winnaar
         if (checkWinner(finalPosition)) {
           setGameMessage(`${PLAYER_NAMES[currentPlayer]} heeft gewonnen!`);
+          playSound('winnaar'); // Speel winnaar geluid af
           clearInterval(moveInterval);
           return;
         }
@@ -222,7 +263,7 @@ const movePlayer = (e) => {
     } else {
       clearInterval(moveInterval);
     }
-  }, 1000); // Interval tussen elke stap (300ms)
+  }, 1000); // Interval tussen elke stap
 };
 
 // Winner functie
@@ -368,19 +409,24 @@ const renderBoard = () => {
               >   
                 Beurt aan Redlights
               </button>
+              
               <button 
-                onClick={() => {
-                  if (!player1DemarrageUsed) {
-                    setIsDemarrageActive(true);
-                    setCurrentPlayer(1);
-                  }
-                }}
-                disabled={player1DemarrageUsed}
-                className={`px-4 py-2 rounded-md text-white transition-colors 
-                  ${player1DemarrageUsed ? 'bg-gray-400' : 'bg-pink-500 hover:bg-pink-600'}`}
-              >
-                Demarrage Redlights
-              </button>
+  onClick={() => {
+    if (!player1DemarrageUsed) {
+      setIsDemarrageActive(true);
+      setCurrentPlayer(1);
+      playSound('demarrage');
+      setGameMessage('Demarrage geactiveerd voor Redlights!');
+    }
+  }}
+  disabled={player1DemarrageUsed}
+  className={`px-4 py-2 rounded-md text-white transition-colors 
+    ${player1DemarrageUsed ? 'bg-gray-400' : 'bg-pink-500 hover:bg-pink-600'}`}
+>
+  Demarrrrrrrrage
+</button>
+
+
               <div className="flex gap-2">
                 <button 
                   onClick={() => {
@@ -485,19 +531,23 @@ const renderBoard = () => {
               >
                 Beurt aan Blauwjob
               </button>
+
               <button 
-                onClick={() => {
-                  if (!player2DemarrageUsed) {
-                    setIsDemarrageActive(true);
-                    setCurrentPlayer(2);
-                  }
-                }}
-                disabled={player2DemarrageUsed}
-                className={`px-4 py-2 rounded-md text-white transition-colors 
-                  ${player2DemarrageUsed ? 'bg-gray-400' : 'bg-blue-400 hover:bg-blue-500'}`}
-              >
-                Demarrage Blauwjob
-              </button>
+  onClick={() => {
+    if (!player1DemarrageUsed) {
+      setIsDemarrageActive(true);
+      setCurrentPlayer(2);
+      playSound('demarrage');
+      setGameMessage('Demarrage geactiveerd voor Blauwjob!');
+    }
+  }}
+  disabled={player2DemarrageUsed}
+  className={`px-4 py-2 rounded-md text-white transition-colors 
+    ${player2DemarrageUsed ? 'bg-gray-400' : 'bg-blue-400 hover:bg-blue-500'}`}
+>
+  Demarrrrrrrrage
+</button>
+
               <div className="flex gap-2">
                 <button 
                   onClick={() => {
