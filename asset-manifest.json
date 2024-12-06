@@ -1,16 +1,24 @@
 {
   "files": {
     "main.css": "/bientjeskoersspel/static/css/main.635d10fb.css",
-    "main.js": "/bientjeskoersspel/static/js/main.c7f201e6.js",
+    "main.js": "/bientjeskoersspel/static/js/main.3a9bc891.js",
     "static/js/453.61bbe48a.chunk.js": "/bientjeskoersspel/static/js/453.61bbe48a.chunk.js",
+    "static/media/Winnaar.mp3": "/bientjeskoersspel/static/media/Winnaar.b77a760deee8671c05eb.mp3",
+    "static/media/Bidon.mp3": "/bientjeskoersspel/static/media/Bidon.5455d6d9021ca0b59c0e.mp3",
+    "static/media/Demarrage.mp3": "/bientjeskoersspel/static/media/Demarrage.ee698cf5a2994809f0ef.mp3",
     "static/media/Lonely.mp3": "/bientjeskoersspel/static/media/Lonely.abedeb3affad9fa3d032.mp3",
+    "static/media/Opdracht.mp3": "/bientjeskoersspel/static/media/Opdracht.e1cdccebe2c7f4b9b797.mp3",
+    "static/media/Valpartij.mp3": "/bientjeskoersspel/static/media/Valpartij.06c7ab5471524a9937f8.mp3",
+    "static/media/Plat.mp3": "/bientjeskoersspel/static/media/Plat.fc96b588fba64d3dfd86.mp3",
+    "static/media/Windstoot.mp3": "/bientjeskoersspel/static/media/Windstoot.78a473fb0700c555ca12.mp3",
+    "static/media/Chasse.mp3": "/bientjeskoersspel/static/media/Chasse.a73a7be8df6ae201025f.mp3",
     "index.html": "/bientjeskoersspel/index.html",
     "main.635d10fb.css.map": "/bientjeskoersspel/static/css/main.635d10fb.css.map",
-    "main.c7f201e6.js.map": "/bientjeskoersspel/static/js/main.c7f201e6.js.map",
+    "main.3a9bc891.js.map": "/bientjeskoersspel/static/js/main.3a9bc891.js.map",
     "453.61bbe48a.chunk.js.map": "/bientjeskoersspel/static/js/453.61bbe48a.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.635d10fb.css",
-    "static/js/main.c7f201e6.js"
+    "static/js/main.3a9bc891.js"
   ]
 }
